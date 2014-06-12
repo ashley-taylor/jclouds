@@ -115,6 +115,12 @@ public class CustomizeNodeAndAddToGoodMapOrPutExceptionIntoBadMap implements Cal
       try {
          if (options.shouldBlockUntilRunning()) {
             pollNodeRunning.apply(node);
+            if (this.options.getInitPredicate() != null) {
+               boolean predicateResponse = this.options.getInitPredicate().apply(this.node.get());
+               if(!predicateResponse) {
+                  throw new IllegalStateException("Node InitPredicate failed");
+               }
+            }
             if (statement != null) {
                RunScriptOnNode runner = initScriptRunnerFactory.create(node.get(), statement, options, badNodes).call();
                if (runner != null) {

@@ -40,6 +40,7 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import com.google.common.base.Function;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Maps;
@@ -135,5 +136,77 @@ public class CustomizeNodeAndAddToGoodMapOrPutExceptionIntoBadMapTest {
 
       // verify mocks
       verify(initScriptRunnerFactory, openSocketFinder);
+   }
+   
+   
+   public void testInitPredicateValid() {
+      InitializeRunScriptOnNodeOrPlaceInBadMap.Factory initScriptRunnerFactory = createMock(InitializeRunScriptOnNodeOrPlaceInBadMap.Factory.class);
+      @SuppressWarnings("unchecked")
+      Function<AtomicReference<NodeMetadata>, AtomicReference<NodeMetadata>> pollNodeRunning = createMock(Function.class);
+      @SuppressWarnings("unchecked")
+      Predicate<NodeMetadata> initPredicate = createMock(Predicate.class);
+      OpenSocketFinder openSocketFinder = createMock(OpenSocketFinder.class);
+      
+      Function<TemplateOptions, Statement> templateOptionsToStatement = new TemplateOptionsToStatement();
+      TemplateOptions options = new TemplateOptions().initPredicate(initPredicate);
+      
+      Set<NodeMetadata> goodNodes = Sets.newLinkedHashSet();
+      Map<NodeMetadata, Exception> badNodes = Maps.newLinkedHashMap();
+      Multimap<NodeMetadata, CustomizationResponse> customizationResponses = LinkedHashMultimap.create();
+
+      final NodeMetadata pendingNode = new NodeMetadataBuilder().ids("id").status(Status.PENDING).build();
+
+      expect(initPredicate.apply(pendingNode)).andReturn(true);
+      
+      // replay mocks
+      replay(initPredicate);
+      // run
+      AtomicReference<NodeMetadata> atomicNode = Atomics.newReference(pendingNode);
+      new CustomizeNodeAndAddToGoodMapOrPutExceptionIntoBadMap(pollNodeRunning, openSocketFinder,
+            templateOptionsToStatement, initScriptRunnerFactory, options, atomicNode, goodNodes, badNodes,
+            customizationResponses).apply(atomicNode);
+
+      assertEquals(badNodes.size(), 0);
+      assertEquals(goodNodes, ImmutableSet.of(pendingNode));
+      assertEquals(customizationResponses.size(), 0);
+
+      // verify mocks
+      verify( initPredicate);
+   }
+   
+   public void testInitPredicateInValid() {
+      InitializeRunScriptOnNodeOrPlaceInBadMap.Factory initScriptRunnerFactory = createMock(InitializeRunScriptOnNodeOrPlaceInBadMap.Factory.class);
+      @SuppressWarnings("unchecked")
+      Function<AtomicReference<NodeMetadata>, AtomicReference<NodeMetadata>> pollNodeRunning = createMock(Function.class);
+      @SuppressWarnings("unchecked")
+      Predicate<NodeMetadata> initPredicate = createMock(Predicate.class);
+      OpenSocketFinder openSocketFinder = createMock(OpenSocketFinder.class);
+      
+      Function<TemplateOptions, Statement> templateOptionsToStatement = new TemplateOptionsToStatement();
+      TemplateOptions options = new TemplateOptions().initPredicate(initPredicate);
+      
+      Set<NodeMetadata> goodNodes = Sets.newLinkedHashSet();
+      Map<NodeMetadata, Exception> badNodes = Maps.newLinkedHashMap();
+      Multimap<NodeMetadata, CustomizationResponse> customizationResponses = LinkedHashMultimap.create();
+
+      final NodeMetadata pendingNode = new NodeMetadataBuilder().ids("id").status(Status.PENDING).build();
+
+      expect(initPredicate.apply(pendingNode)).andReturn(false);
+      
+      // replay mocks
+      replay(initPredicate);
+      // run
+      AtomicReference<NodeMetadata> atomicNode = Atomics.newReference(pendingNode);
+      new CustomizeNodeAndAddToGoodMapOrPutExceptionIntoBadMap(pollNodeRunning, openSocketFinder,
+            templateOptionsToStatement, initScriptRunnerFactory, options, atomicNode, goodNodes, badNodes,
+            customizationResponses).apply(atomicNode);
+
+      assertEquals(goodNodes.size(), 0);
+      assertEquals(badNodes.keySet(), ImmutableSet.of(pendingNode));
+      assertEquals(badNodes.get(pendingNode).getMessage(), "Node InitPredicate failed");
+      assertEquals(customizationResponses.size(), 0);
+
+      // verify mocks
+      verify( initPredicate);
    }
 }

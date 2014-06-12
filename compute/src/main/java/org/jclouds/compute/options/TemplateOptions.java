@@ -24,12 +24,14 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 
+import org.jclouds.compute.domain.NodeMetadata;
 import org.jclouds.domain.LoginCredentials;
 import org.jclouds.scriptbuilder.domain.Statement;
 import org.jclouds.scriptbuilder.domain.Statements;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.primitives.Ints;
@@ -68,6 +70,8 @@ public class TemplateOptions extends RunScriptOptions implements Cloneable {
          to.inboundPorts(this.getInboundPorts());
       if (this.getRunScript() != null)
          to.runScript(this.getRunScript());
+      if(this.getInitPredicate() != null)
+         to.initPredicate(this.getInitPredicate());
       if (this.getGroups().size() > 0)
          to.securityGroups(this.getGroups());
       if (this.getPrivateKey() != null)
@@ -158,6 +162,11 @@ public class TemplateOptions extends RunScriptOptions implements Cloneable {
       @Override
       public TemplateOptions runScript(Statement script) {
          throw new IllegalArgumentException("script is immutable");
+      }
+      
+      @Override
+      public TemplateOptions initPredicate(Predicate<NodeMetadata> initPredicate) {
+         throw new IllegalArgumentException("initPredicate is immutable");
       }
 
       @Override
@@ -272,6 +281,11 @@ public class TemplateOptions extends RunScriptOptions implements Cloneable {
       public Statement getRunScript() {
          return delegate.getRunScript();
       }
+      
+      @Override
+      public Predicate<NodeMetadata> getInitPredicate() {
+         return delegate.getInitPredicate();
+      }
 
       @Override
       public boolean shouldBlockUntilRunning() {
@@ -357,6 +371,8 @@ public class TemplateOptions extends RunScriptOptions implements Cloneable {
    protected Set<Integer> inboundPorts = DEFAULT_INBOUND_PORTS;
 
    protected Statement script;
+   
+   protected Predicate<NodeMetadata> initPredicate;
 
    protected Set<String> tags = ImmutableSet.of();
 
@@ -384,12 +400,12 @@ public class TemplateOptions extends RunScriptOptions implements Cloneable {
               && equal(this.publicKey, that.publicKey) && equal(this.privateKey, that.privateKey)
               && equal(this.blockUntilRunning, that.blockUntilRunning) && equal(this.tags, that.tags)
               && equal(this.securityGroups, that.securityGroups) && equal(this.userMetadata, that.userMetadata)
-              && equal(this.nodeNames, that.nodeNames) && equal(this.networks, that.networks);
+              && equal(this.nodeNames, that.nodeNames) && equal(this.networks, that.networks) && equal(this.initPredicate, that.initPredicate);
    }
 
    @Override
    public int hashCode() {
-      return Objects.hashCode(super.hashCode(), inboundPorts, script, publicKey, privateKey, blockUntilRunning, tags,
+      return Objects.hashCode(super.hashCode(), inboundPorts, script, initPredicate, publicKey, privateKey, blockUntilRunning, tags,
                               securityGroups, userMetadata, nodeNames, networks);
    }
 
@@ -425,6 +441,10 @@ public class TemplateOptions extends RunScriptOptions implements Cloneable {
 
    public Statement getRunScript() {
       return script;
+   }
+   
+   public Predicate<NodeMetadata> getInitPredicate() {
+      return initPredicate;
    }
 
    public Set<String> getTags() {
@@ -478,6 +498,15 @@ public class TemplateOptions extends RunScriptOptions implements Cloneable {
     */
    public TemplateOptions runScript(Statement script) {
       this.script = checkNotNull(script, "script");
+      return this;
+   }
+   
+   /**
+    * this predicate will be called before the runScript pass all the current
+    * node metadata. 
+    */
+   public TemplateOptions initPredicate(Predicate<NodeMetadata> initPredicate) {
+      this.initPredicate = checkNotNull(initPredicate, "initPredicate");
       return this;
    }
 
@@ -691,6 +720,14 @@ public class TemplateOptions extends RunScriptOptions implements Cloneable {
          return options.runScript(script);
       }
 
+      /**
+       * @see TemplateOptions#initPredicate(Predicate)
+       */
+      public static TemplateOptions initPredicate(Predicate<NodeMetadata> initPredicate) {
+         TemplateOptions options = new TemplateOptions();
+         return options.initPredicate(initPredicate);
+      }
+      
       /**
        * please use alternative that uses the {@link org.jclouds.io.Payload}
        * object
