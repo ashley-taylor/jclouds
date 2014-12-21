@@ -70,7 +70,7 @@ public class TemplateOptions extends RunScriptOptions implements Cloneable {
          to.inboundPorts(this.getInboundPorts());
       if (this.getRunScript() != null)
          to.runScript(this.getRunScript());
-      if(this.getInitPredicate() != null)
+      if (this.getInitPredicate() != null)
          to.initPredicate(this.getInitPredicate());
       if (!this.getGroups().isEmpty())
          to.securityGroups(this.getGroups());

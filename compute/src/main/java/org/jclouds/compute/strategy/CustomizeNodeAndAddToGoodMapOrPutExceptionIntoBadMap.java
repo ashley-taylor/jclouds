@@ -117,7 +117,7 @@ public class CustomizeNodeAndAddToGoodMapOrPutExceptionIntoBadMap implements Cal
             pollNodeRunning.apply(node);
             if (this.options.getInitPredicate() != null) {
                boolean predicateResponse = this.options.getInitPredicate().apply(this.node.get());
-               if(!predicateResponse) {
+               if (!predicateResponse) {
                   throw new IllegalStateException("Node InitPredicate failed");
                }
             }
